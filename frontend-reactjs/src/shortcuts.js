@@ -10,7 +10,7 @@
 // Keep SHORTCUTS/TILE_EDITING_HINTS in sync with the actual keydown handler and tier mousedown
 // handler in App.jsx — this file is documentation of that behavior, not the source of truth for it.
 
-export const WELCOME_TITLE = 'Welcome to the LYSN speech annotation tool';
+export const WELCOME_TITLE = 'Welcome to the GLySN Speech Annotator (GSA)';
 
 export const WELCOME_TEXT = `We hope you find this tool useful for generating and revising word- and phoneme-level
 annotations of speech. Before you get started, here are some helpful keyboard shortcuts
@@ -25,23 +25,23 @@ export const SHORTCUTS = [
   { keys: ['↑', '↓'], desc: 'Adjust viewing window size' },
   { keys: ['+', '-'], desc: 'Adjust waveform amplitude, or tile text size' },
   { keys: ['Ctrl/Cmd+S'], desc: 'Save the TextGrid to disk' },
+  { keys: ['Shift'], suffix: '+click', desc: 'When unlocked: range-select in this tier (keeps other tiers selected), without setting the play region. When locked: same as a plain click.' },
+  { keys: ['Ctrl/Cmd'], suffix: '+click (or drag)', desc: 'When unlocked: toggle tiles into/out of a multi-selection across tiers without replacing the selection or setting the play region; drag adds tiles in the starting tier. When locked: same as a plain click.' },
 ];
 
 export const TILE_EDITING_HINTS = [
-  { keys: ['Click'], desc: 'Select one tile and set the play region to it' },
+  { keys: ['Click'], desc: 'Select one tile exclusively and set the play region to it (replaces any previous multi-selection)' },
+  { keys: ['Shift'], suffix: '+click', desc: 'Select an anchored contiguous range in this tier while keeping selections in other tiers' },
+  { keys: ['Ctrl/Cmd'], suffix: '+click', desc: 'Add or remove that tile from the multi-selection without clearing others or changing the play region' },
   { keys: ['Ctrl/Cmd+Z'], desc: 'Undo' },
   { keys: ['Ctrl/Cmd+Y'], desc: 'Redo' },
-  { keys: ['Ctrl/Cmd+C'], desc: 'Copy the selected tile(s)' },
-  { keys: ['Ctrl/Cmd+V'], desc: 'Paste the copied tile(s) as new tile(s) anchored at playhead' },
-  { keys: ['Delete'], desc: 'Delete the selected tile(s)' },
-  { keys: ['Shift'], suffix: '+click', desc: 'Select an anchored range in this tier while keeping selections in other tiers' },
-  { keys: ['Ctrl/Cmd'], suffix: '+click', desc: 'Add or remove the tile from the multi-selection without clearing others or changing the play region' },
-  { keys: ['Double-click'], desc: 'On a tile: rename it. On empty space: create a new tile there and open the label editor for it.' },
-  { keys: ['Right-click'], desc: 'Open the tile menu — rename, merge with next, delete, or mark a word validated' },
-  { keys: ['Click+Drag'], desc: 'On empty space: set a loop selection region. On a tile edge: resize it. On a tile body: move it (or the whole selected group).' },
+  { keys: ['Ctrl/Cmd+C'], desc: 'Copy the selected tile(s) (edit mode only)' },
+  { keys: ['Ctrl/Cmd+V'], desc: 'Paste the copied tile(s) as new tile(s) anchored at playhead (edit mode only)' },
+  { keys: ['Delete'], desc: 'Delete the selected tile(s) (edit mode only)' },
+  { keys: ['Double-click'], desc: 'On a tile: rename it (opens the label editor). On empty space: create a new tile there and open the label editor for it.' },
+  { keys: ['Right-click'], desc: 'Open the context menu — rename, merge with next, delete, or mark a word validated' },
+  { keys: ['Click+Drag'], desc: 'On empty space: set a loop selection region. On a tile edge: resize it. On a tile body: move it (or the whole selected group). Edge/body drags snap to nearby boundaries within 10px.' },
   { keys: ['Click+Alt+Drag'], desc: 'Drag a tile edge or body without snapping to nearby boundaries (Alt can be toggled mid-drag)' },
-  { keys: ['Shift'], suffix: '+click', desc: 'Range-select in this tier (keeps other tiers selected), without setting the play region.' },
-  { keys: ['Ctrl/Cmd'], suffix: '+click (or drag)', desc: 'Toggle tiles into/out of a multi-selection across tiers without replacing the selection or setting the play region; drag adds tiles in the starting tier.' },
 ];
 
 // TILE_COLOR_LEGEND: each row is { swatchKey: string, label: string, desc: string }

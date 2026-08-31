@@ -4,8 +4,7 @@ Generate an initial TextGrid from audio that contains automatic word and phoneme
 
 [← Back to README](README.md) · [Usage →](USAGE.md) · [Advanced features →](ADVANCED.md)
 
----
-
+--- 
 To perform automatic transcription on your own audio file, run from the `annotation-tool/` directory:
 
 ```bash
@@ -16,8 +15,7 @@ This handles everything — word and phoneme transcription and alignment.
 
 If you specify an output file name, the resulting TextGrid will be saved to `frontend-reactjs/public/[output_filename].TextGrid` otherwise the default filename is `output_whisper.TextGrid`.
 
----
-
+--- 
 **Changing the Whisper model size** — by default WhisperX uses `tiny.en` (fast, less accurate). To use a larger model, edit line 32 of `asr/models/whisper_asr.py`:
 
 ```python
@@ -26,11 +24,9 @@ _CHECKPOINT = "tiny.en"   # change to e.g. "base.en", "small.en", "large-v3-turb
 
 Larger models are more accurate but slower. See the [WhisperX docs](https://github.com/m-bain/whisperX) for all available checkpoints.
 
-
+<video src="https://github.com/user-attachments/assets/1f9cb5c7-2829-4bd2-9c47-d2ca2fb4b183" controls width="100%"></video>
 
 ---
-
-
 
 ### Non-English audio
 
@@ -39,12 +35,12 @@ WhisperX auto-detects the spoken language, so any multilingual checkpoint (anyth
 MFA phoneme alignment defaults to English (`english_us_arpa`) though, so aligning a different language takes two extra steps:
 
 1. Download that language's MFA models once (model names follow MFA's own naming, e.g. `french_mfa`):
-  ```bash
+   ```bash
    conda run -n aligner mfa model download acoustic french_mfa
    conda run -n aligner mfa model download dictionary french_mfa
-  ```
+   ```
 2. `run_whisper.sh` doesn't expose these flags, so run the two pipeline steps manually instead, passing `--dictionary`/`--acoustic-model` on step 2:
-  ```bash
+   ```bash
    # Step 1 — transcribe only, write JSON (whisperx env) — unchanged, no language flag needed
    conda run -n whisperx python asr/transcribe.py \
        --model whisper_asr \
@@ -58,7 +54,7 @@ MFA phoneme alignment defaults to English (`english_us_arpa`) though, so alignin
        --output    frontend-reactjs/public/output_whisper.TextGrid \
        --dictionary french_mfa \
        --acoustic-model french_mfa
-  ```
+   ```
 
 See [asr/README.md](asr/README.md#all-flags) for the full flag reference. Phoneme labels for non-English models are shown as MFA's own phone symbols as-is — the ARPAbet→IPA lookup only covers English ARPAbet phones and passes anything else through unchanged.
 
@@ -66,11 +62,9 @@ For non-English **in-browser** MFA re-alignment (the MFA button while annotating
 
 ---
 
-
-
 ### Constraining phonemes to word boundaries
 
-By default MFA aligns each ASR *segment* (a multi-word phrase) as one unit, which will occasionally align phonemes to outside of it's corresponding word boundary, i.e. a phoneme tile that comes before or after its word tile. Pass `--word-level-mfa` on step 2 to align each word individually instead (still with one neighbouring word of context on each side, so MFA keeps seeing coarticulation), then clamp that word's phones to its own boundary:
+By default MFA aligns each ASR *segment* (a multi-word phrase) as one unit, which occasionally lets a phoneme land slightly outside its own word's timing — most visible in the annotation tool as a phoneme tile that doesn't line up under its word. Pass `--word-level-mfa` on step 2 to align each word individually instead (still with one neighbouring word of context on each side, so MFA keeps seeing coarticulation), then clamp that word's phones to its own boundary:
 
 ```bash
 conda run -n aligner python asr/transcribe.py \
@@ -80,18 +74,15 @@ conda run -n aligner python asr/transcribe.py \
     --word-level-mfa
 ```
 
-Off by default — whole-segment alignment gives MFA more acoustic context and is the higher-quality default; word-level trades some of that context for a hard per-word boundary guarantee. Note: for the minority of words where Whisper's own timestamp disagrees with MFA's by more than the word is long (mostly short function words like "a"/"the"/"is"), the word falls back to the same unclamped behavior as the default instead of being silently dropped. See [asr/README.md](asr/README.md#all-flags) for the full flag reference.
+Off by default — whole-segment alignment gives MFA more acoustic context and is the higher-quality default; word-level trades some of that context for a hard per-word boundary guarantee. That guarantee isn't absolute either: for the minority of words where Whisper's own timestamp disagrees with MFA's by more than the word is long (mostly short function words like "a"/"the"/"is"), the word falls back to the same unclamped behavior as the default instead of being silently dropped. See [asr/README.md](asr/README.md#all-flags) for the full flag reference.
 
 ---
 
-
-
 ### Using a reference transcript
 
-If you already know the exact text of the audio (a script, or a transcript you've hand-corrected), give the pipeline that text and it'll correct ASR's word-level output against it before MFA alignment runs.
+If you already know the exact text of the audio (a script, or a transcript you've hand-corrected), give the pipeline that text and it'll correct ASR's word-level output against it before MFA alignment runs — useful since ASR mishearings otherwise propagate straight into the final TextGrid.
 
 Via the convenience scripts, as an optional third argument:
-
 ```bash
 bash asr/run_whisper.sh /path/to/audio.wav output_name /path/to/reference.txt
 ```
