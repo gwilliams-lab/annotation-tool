@@ -106,8 +106,13 @@ Windows isn't supported directly since `setup.sh` is a bash script — use WSL (
 
 ## Demo
 What you should see once the tool is all set up:
-<video src="https://www.youtube.com/embed/itkZ2tmGEx8" controls width="100%"></video>
-<!-- <video src="https://github.com/user-attachments/assets/a6242a2a-df1b-4089-88d7-ecdb3a090055" controls width="100%"></video> -->
+
+<a href="https://www.youtube.com/watch?v=itkZ2tmGEx8">
+  <img src="https://img.youtube.com/vi/itkZ2tmGEx8/maxresdefault.jpg" width="600">
+</a>
+
+<!-- <video src="https://www.youtube.com/embed/itkZ2tmGEx8" controls width="100%"></video>
+<!-- <video src="https://github.com/user-attachments/assets/a6242a2a-df1b-4089-88d7-ecdb3a090055" controls width="100%"></video> --> -->
 
 ---
 
