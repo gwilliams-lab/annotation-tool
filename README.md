@@ -139,10 +139,16 @@ What you should see once the tool is all set up:
 ## File structure
 
 ```
-code/
+annotation-tool/
+├── README.md
+├── USAGE.md
+├── TRANSCRIPTION.md
+├── ADVANCED.md
+├── CONTRIBUTING.md
 ├── setup.sh                  — one-time setup for all environments
 ├── environment.yml           — conda spec for the aligner env (MFA + Flask server)
 ├── mfa_server.py             — Flask server for in-browser MFA re-alignment
+├── mfa_stress_test.py        — Test for in-browser MFA re-alignment
 ├── asr/                      — ASR + initial alignment pipeline
 │   ├── transcribe.py         — entry point: audio → TextGrid
 │   ├── reference_align.py    — optional word-level correction against a known reference transcript
