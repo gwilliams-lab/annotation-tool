@@ -104,6 +104,26 @@ Windows isn't supported directly since `setup.sh` is a bash script — use WSL (
 
 ---
 
+## Run it with `npm run dev` (not a static build)
+
+This tool is designed to run **locally in development mode** (`npm run dev`). The Vite dev server isn't just serving the page — it also hosts the Python-backed features and file I/O via local API routes, and (for in-browser re-alignment) talks to `mfa_server.py`.
+
+A static production bundle (`npm run build` → `dist/`) still loads and runs, but these dev-server–only features are unavailable in it:
+
+| Feature | `npm run dev` | Static `dist/` build |
+|---|---|---|
+| Playback, waveform, tile viewing & editing | ✅ | ✅ |
+| Export TextGrid (browser download) | ✅ | ✅ |
+| Live frequency crosshair/readout | ✅ | ✅ |
+| Enhanced spectrogram & formants/pitch | ✅ | ❌ (needs `/api/compute-dsp` + `aligner` env) |
+| Save to disk — `Ctrl/Cmd+S` | ✅ | ❌ (needs `/api/save-textgrid`) |
+| Load a `.wav` from outside `public/` | ✅ | ❌ (needs `/api/upload-wav`) |
+| In-browser MFA re-alignment (**MFA** button) | ✅ | ❌ (needs `mfa_server.py` on :5050) |
+
+In short: keep using `npm run dev` for the full experience. A hosted/static deployment would need a real backend reimplementing those API routes, which this repo does not ship.
+
+---
+
 ## Demo
 What you should see once the tool is all set up:
 

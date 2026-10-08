@@ -57,6 +57,32 @@ const getChunkBounds = (idx, duration) => ({
   chunkT1: Math.min(duration, (idx + 1) * OVERVIEW_CHUNK_SEC),
 });
 
+// Compute a new [t0, t1] view window of width `span`, anchored so the time `anchorT`
+// stays under the same fractional x-position (`anchorFraction`, 0..1), clamped to
+// [0, DUR] and re-expanded if a clamp would otherwise shrink the span. Shared by the
+// zoom buttons (anchored at center, fraction 0.5) and ctrl+wheel zoom (anchored at
+// the cursor's fractional position).
+function computeClampedView(anchorT, anchorFraction, span, DUR) {
+  let t0 = Math.max(0, anchorT - anchorFraction * span);
+  let t1 = Math.min(DUR, t0 + span);
+  if (t1 - t0 < span) t0 = t1 - span;
+  return { t0, t1 };
+}
+
+// MFA queue job status -> icon/color. Falls back to the pending appearance for any
+// status not listed (currently 'pending').
+const MFA_STATUS_ICON  = { running: '⟳', error: '✕' };
+const MFA_STATUS_COLOR = { running: 'var(--warn-computing)', error: 'var(--error-text)' };
+
+// Clamp a desired on-screen position so a `width`x`height` box stays within the
+// viewport with `margin` px of breathing room on every edge. Returns {left, top}.
+function clampToViewport({ left, top, width, height, margin = 8 }) {
+  return {
+    left: Math.max(margin, Math.min(left, window.innerWidth  - width  - margin)),
+    top:  Math.max(margin, Math.min(top,  window.innerHeight - height - margin)),
+  };
+}
+
 // dsp_server.py returns the spectrogram strip as a base64 PNG (spec.png) rather than
 // a flat pixel-number array — much smaller and much faster to parse than the old
 // ImageData/putImageData path.
@@ -66,6 +92,79 @@ async function pngBase64ToOffscreen(base64) {
   const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
   canvas.getContext('2d').drawImage(bitmap, 0, 0);
   return canvas;
+}
+
+// Shared transport for the three DSP fetchers (enhanced spec, overview chunk,
+// formants). Each caller builds its own request body and owns its cache-write/
+// decode logic; this only centralizes the POST + JSON-unwrap + error-throw so the
+// three can't drift on transport details (e.g. one silently missing the timeout).
+async function fetchDsp(body, { signal } = {}) {
+  const res = await fetch('/api/compute-dsp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// Build an MFA transcript string from a set of word items: time-ordered, trimmed,
+// blank-filtered, space-joined. Used both to feed the aligner and to label queued jobs.
+function wordsToTranscript(words) {
+  return [...words].sort((a, b) => a.t0 - b.t0).map(w => w.text.trim()).filter(Boolean).join(' ');
+}
+
+// Small inline "dismiss/close" button (the repeated background:none/border:none/
+// cursor:pointer glyph button). Callers pass the glyph (default ×), onClick, optional
+// title, and a `style` for the per-site color/size/padding/layout differences.
+function DismissButton({ onClick, title, glyph = '×', style }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      style={{ background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1, ...style }}
+    >{glyph}</button>
+  );
+}
+
+// A panel-gutter +/- adjust button (waveform amplitude zoom, tile text size). Sets
+// the focused panel, then calls `onAdjust(dir)`; the glyph follows the sign of `dir`.
+function GutterAdjustBtn({ focusRef, panel, dir, onAdjust, title }) {
+  return (
+    <button
+      className="panel-gutter-btn"
+      onClick={() => { focusRef.current = panel; onAdjust(dir); }}
+      title={title}
+    >{dir > 0 ? '+' : '−'}</button>
+  );
+}
+
+// Bottom-right warning/error toast with a dismiss button. `variant` ('error'|'warn')
+// picks the CSS class + dismiss color; `offset` is the distance from the bottom edge
+// (so a second toast can stack above the first).
+function Toast({ variant, message, onDismiss, offset = 16 }) {
+  const dismissColor = variant === 'error' ? 'var(--error-text)' : 'var(--warn-text)';
+  return (
+    <div className={`toast toast--${variant}`} style={{
+      position: 'fixed', bottom: offset, right: 16,
+      padding: '7px 10px 7px 12px',
+      fontFamily: 'Inter,system-ui,sans-serif',
+      display: 'flex', alignItems: 'flex-start', gap: 8,
+    }}>
+      <span style={{ flexShrink: 0 }}>⚠</span>
+      <span style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.5 }}>
+        {message}
+      </span>
+      <DismissButton
+        onClick={onDismiss}
+        title="Dismiss"
+        style={{ color: dismissColor, fontSize: 14, padding: '0 0 0 4px', flexShrink: 0, alignSelf: 'flex-start' }}
+      />
+    </div>
+  );
 }
 
 // ── IPA virtual keyboard ──────────────────────────────────────────────────────
@@ -173,10 +272,8 @@ function IpaTooltip({ symbol, example, anchorRect }) {
     const tw = el.offsetWidth;
     const th = el.offsetHeight;
     const cx = anchorRect.left + anchorRect.width / 2;
-    let left = cx - tw / 2;
-    let top  = anchorRect.top - th - 8; // fixed positioning — no scrollY
-    left = Math.max(6, Math.min(left, window.innerWidth - tw - 6));
-    top  = Math.max(6, top);
+    // fixed positioning — no scrollY; tooltip sits above the anchor
+    const { left, top } = clampToViewport({ left: cx - tw / 2, top: anchorRect.top - th - 8, width: tw, height: th, margin: 6 });
     setPos({ top, left, visible: true });
   }, [anchorRect]);
 
@@ -223,12 +320,9 @@ function LabelEditorPopover({ editor, onCommit, onClose }) {
     const el = wrapRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    if (rect.bottom > window.innerHeight - 8) {
-      el.style.top = Math.max(8, window.innerHeight - rect.height - 8) + 'px';
-    }
-    if (rect.right > window.innerWidth - 8) {
-      el.style.left = Math.max(8, window.innerWidth - rect.width - 8) + 'px';
-    }
+    const clamped = clampToViewport({ left: rect.left, top: rect.top, width: rect.width, height: rect.height, margin: 8 });
+    if (rect.bottom > window.innerHeight - 8) el.style.top = clamped.top + 'px';
+    if (rect.right > window.innerWidth - 8) el.style.left = clamped.left + 'px';
   }, [isPhone]);
 
   const left = editor.x - editor.boxW / 2;
@@ -927,11 +1021,11 @@ function ShortcutsPopover({ onClose }) {
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
           {WELCOME_TITLE}
         </div>
-        <button
-          type="button"
+        <DismissButton
+          glyph="✕"
           onClick={onClose}
-          style={{ background: 'none', border: 'none', color: 'var(--text-mute)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 0 0 4px', flexShrink: 0 }}
-        >✕</button>
+          style={{ color: 'var(--text-mute)', fontSize: 14, padding: '0 0 0 4px', flexShrink: 0 }}
+        />
       </div>
 
       <div style={{ fontSize: 12, color: 'var(--text-soft)', lineHeight: 1.5, marginBottom: 8 }}>
@@ -1996,20 +2090,13 @@ export default function App() {
     const viewSpan = Math.max(1e-6, vt1 - vt0);
     const pw = Math.max(1, Math.round(viewPw * (reqT1 - reqT0) / viewSpan));
     try {
-      const res = await fetch('/api/compute-dsp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wavFile: publicWavFileRef.current,
-          t0: reqT0, t1: reqT1,
-          colormap: colormapNameRef.current,
-          pw, ph,
-          kind: 'spec',
-        }),
-        signal: AbortSignal.timeout(SPEC_FETCH_TIMEOUT_MS),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const data = await fetchDsp({
+        wavFile: publicWavFileRef.current,
+        t0: reqT0, t1: reqT1,
+        colormap: colormapNameRef.current,
+        pw, ph,
+        kind: 'spec',
+      }, { signal: AbortSignal.timeout(SPEC_FETCH_TIMEOUT_MS) });
       if (myGen !== specFetchGenRef.current) return; // superseded by a newer request — drop
 
       const { png, pw: spw, ph: sph, stripT0, stripT1 } = data.spec;
@@ -2054,20 +2141,13 @@ export default function App() {
     const dpr = window.devicePixelRatio || 1;
     const ph = canvas ? Math.round(canvas.offsetHeight * dpr) : 400;
     try {
-      const res = await fetch('/api/compute-dsp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wavFile: publicWavFileRef.current,
-          t0: chunkT0, t1: chunkT1,
-          colormap: colormapNameRef.current,
-          pw: OVERVIEW_PW, ph,
-          kind: 'spec',
-        }),
-        signal: AbortSignal.timeout(SPEC_FETCH_TIMEOUT_MS),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const data = await fetchDsp({
+        wavFile: publicWavFileRef.current,
+        t0: chunkT0, t1: chunkT1,
+        colormap: colormapNameRef.current,
+        pw: OVERVIEW_PW, ph,
+        kind: 'spec',
+      }, { signal: AbortSignal.timeout(SPEC_FETCH_TIMEOUT_MS) });
 
       const { png, pw: spw, ph: sph, stripT0, stripT1 } = data.spec;
       const offscreen = await pngBase64ToOffscreen(png);
@@ -2161,19 +2241,12 @@ export default function App() {
     setFormantComputing(true);
     const { t0, t1 } = viewRef.current;
     try {
-      const res = await fetch('/api/compute-dsp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wavFile: publicWavFileRef.current,
-          t0, t1,
-          colormap: colormapNameRef.current,
-          kind: 'formants', // server skips spectrogram computation entirely — see below
-        }),
-        signal: AbortSignal.timeout(SPEC_FETCH_TIMEOUT_MS),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const data = await fetchDsp({
+        wavFile: publicWavFileRef.current,
+        t0, t1,
+        colormap: colormapNameRef.current,
+        kind: 'formants', // server skips spectrogram computation entirely — see below
+      }, { signal: AbortSignal.timeout(SPEC_FETCH_TIMEOUT_MS) });
 
       formantTrackRef.current = { ...data.formants };
       // data.spec is always null here (kind: 'formants') — the rolling-buffer prefetch
@@ -2344,10 +2417,7 @@ export default function App() {
           startPlay(sel.t0);
           return;
         }
-        stopAudio();
-        setPlaying(false);
-        updateTimeDisplay();
-        redraw();
+        stopPlay();
       };
       audioSourceRef.current = src;
       playingRef.current = true;
@@ -2359,7 +2429,7 @@ export default function App() {
     } else {
       doStart();
     }
-  }, [stopAudio, tick, drawOverlay, redraw, updateTimeDisplay]);
+  }, [stopAudio, stopPlay, tick, drawOverlay, redraw, updateTimeDisplay]);
 
   // ── Data loading ──────────────────────────────────────────────────────
 
@@ -2451,8 +2521,9 @@ export default function App() {
     // export/save (see serializeTextGrid), not a hardcoded literal.
     const wordsKey  = Object.keys(tiers).find(k => k.toLowerCase() === 'words');
     const phonesKey = Object.keys(tiers).find(k => ['phones', 'phonemes', 'phone'].includes(k.toLowerCase()));
-    const w = assignRows(withIds(tierLower['words'] || []));
-    const p = assignRows(withIds(tierLower['phones'] || tierLower['phonemes'] || tierLower['phone'] || []));
+    const buildItems = (items) => assignRows(withIds(items || []));
+    const w = buildItems(tierLower['words']);
+    const p = buildItems(tierLower['phones'] || tierLower['phonemes'] || tierLower['phone']);
     durationRef.current = dur; setDuration(dur);
     wordsRef.current = w;      setWords(w);
     phonesRef.current = p;     setPhones(p);
@@ -2467,7 +2538,7 @@ export default function App() {
         id: nextId(),
         name,
         visible: true,
-        items: assignRows(withIds(items || [])),
+        items: buildItems(items),
       }));
     customTiersRef.current = extraTiers;
     setCustomTiers([...extraTiers]);
@@ -2820,11 +2891,9 @@ export default function App() {
     const { t0, t1 } = viewRef.current;
     const DUR = durationRef.current;
     const center = (t0 + t1) / 2;
-    let newT0 = Math.max(0, center - ns/2);
-    let newT1 = Math.min(DUR, newT0 + ns);
-    if (newT1 - newT0 < ns) newT0 = newT1 - ns;
-    viewRef.current = { t0: newT0, t1: newT1 };
-    setZoomValue(spanToSlider(newT1 - newT0));
+    const v = computeClampedView(center, 0.5, ns, DUR);
+    viewRef.current = v;
+    setZoomValue(spanToSlider(v.t1 - v.t0));
     redraw();
   }, [spanToSlider, redraw]);
 
@@ -2866,11 +2935,8 @@ export default function App() {
       if (e.ctrlKey || e.metaKey) {
         const ratio = (e.clientX - rect.left) / rect.width;
         const anchor = t0 + ratio * span;
-        let ns = Math.max(0.5, Math.min(DUR, span * (e.deltaY > 0 ? 1.18 : 0.85)));
-        let newT0 = Math.max(0, anchor - ratio * ns);
-        let newT1 = Math.min(DUR, newT0 + ns);
-        if (newT1 - newT0 < ns) newT0 = newT1 - ns;
-        viewRef.current = { t0: newT0, t1: newT1 };
+        const ns = Math.max(0.5, Math.min(DUR, span * (e.deltaY > 0 ? 1.18 : 0.85)));
+        viewRef.current = computeClampedView(anchor, ratio, ns, DUR);
       } else {
         const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
         const newT0 = Math.max(0, Math.min(DUR - span, t0 + (delta / rect.width) * span * 0.8));
@@ -3969,8 +4035,7 @@ export default function App() {
       const ch = buf.getChannelData(0).slice(startSample, endSample);
       if (ch.length === 0) throw new Error('No audio samples in region');
 
-      const sorted = [...targetWords].sort((a, b) => a.t0 - b.t0);
-      const transcript = sorted.map(w => w.text.trim()).filter(Boolean).join(' ');
+      const transcript = wordsToTranscript(targetWords);
       if (!transcript) throw new Error('Words have no text');
 
       let serverOk = false;
@@ -4010,8 +4075,7 @@ export default function App() {
   }, [applyMfaResult, commitTierItems, pushUndo, redraw, updateQueue]);
 
   const enqueueRunMfa = useCallback((targetWords, sel) => {
-    const sorted = [...targetWords].sort((a, b) => a.t0 - b.t0);
-    const label = sorted.map(w => w.text.trim()).filter(Boolean).join(' ');
+    const label = wordsToTranscript(targetWords);
     const pending = mfaQueueRef.current.filter(j => j.status === 'pending' || j.status === 'running');
     if (pending.length >= 4) {
       setMfaError('Queue full (max 4 jobs). Wait for one to finish.');
@@ -4270,10 +4334,11 @@ export default function App() {
             ⚠ Audio is over 30 minutes — the browser holds the full decoded file in memory.
             Save frequently with <kbd style={{ background: 'var(--warn-kbd-bg)', padding: '1px 5px', borderRadius: 3, border: '1px solid var(--warn-border)' }}>Ctrl/Cmd+S</kbd> to avoid losing work if the tab runs out of memory.
           </span>
-          <button
+          <DismissButton
+            glyph="✕"
             onClick={() => setMemoryWarning(false)}
-            style={{ background: 'none', border: 'none', color: 'var(--warn-text)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 4px' }}
-          >✕</button>
+            style={{ color: 'var(--warn-text)', fontSize: 14, padding: '0 4px' }}
+          />
         </div>
       )}
 
@@ -4464,8 +4529,8 @@ export default function App() {
                           padding: '5px 12px',
                           borderBottom: i < mfaQueue.length - 1 ? '1px solid var(--border)' : 'none',
                         }}>
-                          <span style={{ fontSize: 11, color: job.status === 'running' ? 'var(--warn-computing)' : job.status === 'error' ? 'var(--error-text)' : 'var(--text-mute)', flexShrink: 0 }}>
-                            {job.status === 'running' ? '⟳' : job.status === 'error' ? '✕' : '○'}
+                          <span style={{ fontSize: 11, color: MFA_STATUS_COLOR[job.status] ?? 'var(--text-mute)', flexShrink: 0 }}>
+                            {MFA_STATUS_ICON[job.status] ?? '○'}
                           </span>
                           <span style={{ flex: 1, fontSize: 11, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {job.label}
@@ -4474,11 +4539,11 @@ export default function App() {
                             {job.segT0.toFixed(1)}–{job.segT1.toFixed(1)}s
                           </span>
                           {(job.status === 'pending' || job.status === 'error') && (
-                            <button
+                            <DismissButton
                               onClick={() => updateQueue(q => q.filter(j => j.id !== job.id))}
-                              style={{ background: 'none', border: 'none', color: 'var(--text-dark)', cursor: 'pointer', padding: 0, fontSize: 13, lineHeight: 1, flexShrink: 0 }}
                               title="Remove"
-                            >×</button>
+                              style={{ color: 'var(--text-dark)', padding: 0, fontSize: 13, flexShrink: 0 }}
+                            />
                           )}
                         </div>
                       ))}
@@ -4559,9 +4624,9 @@ export default function App() {
           <div className="panel" ref={wavePanelRef} style={{ flex: panelSplitRef.current }}>
             <div className="panel-gutter panel-gutter--wave">
               <div className="panel-gutter__identity panel-gutter__identity--controls">
-                <button className="panel-gutter-btn" onClick={() => { focusedPanelRef.current = 'waveform'; adjustYZoom(1); }} title="Zoom in (waveform amplitude)">+</button>
+                <GutterAdjustBtn focusRef={focusedPanelRef} panel="waveform" dir={1} onAdjust={adjustYZoom} title="Zoom in (waveform amplitude)" />
                 <span className="gutter-label">WAV</span>
-                <button className="panel-gutter-btn" onClick={() => { focusedPanelRef.current = 'waveform'; adjustYZoom(-1); }} title="Zoom out (waveform amplitude)">−</button>
+                <GutterAdjustBtn focusRef={focusedPanelRef} panel="waveform" dir={-1} onAdjust={adjustYZoom} title="Zoom out (waveform amplitude)" />
               </div>
             </div>
             <div className="panel-body">
@@ -4698,8 +4763,8 @@ export default function App() {
               </label>
             ))}
             <span className="tier-text-size-controls" title="Tile text size">
-              <button className="panel-gutter-btn" onClick={() => { focusedPanelRef.current = 'tiles'; adjustFontScale(-1); }} title="Decrease tile text size">−</button>
-              <button className="panel-gutter-btn" onClick={() => { focusedPanelRef.current = 'tiles'; adjustFontScale(1); }} title="Increase tile text size">+</button>
+              <GutterAdjustBtn focusRef={focusedPanelRef} panel="tiles" dir={-1} onAdjust={adjustFontScale} title="Decrease tile text size" />
+              <GutterAdjustBtn focusRef={focusedPanelRef} panel="tiles" dir={1} onAdjust={adjustFontScale} title="Increase tile text size" />
             </span>
             <span className="tier-visibility-spacer">
               <label className="tier-visibility-label" title="Auto-play tile audio on click">
@@ -4863,42 +4928,12 @@ export default function App() {
 
       {/* ── MFA error toast ──────────────────────────────────────────────── */}
       {mfaError && (
-        <div className="toast toast--error" style={{
-          position: 'fixed', bottom: 16, right: 16,
-          padding: '7px 10px 7px 12px',
-          fontFamily: 'Inter,system-ui,sans-serif',
-          display: 'flex', alignItems: 'flex-start', gap: 8,
-        }}>
-          <span style={{ flexShrink: 0 }}>⚠</span>
-          <span style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.5 }}>
-            {mfaError}
-          </span>
-          <button
-            onClick={() => setMfaError(null)}
-            style={{ background: 'none', border: 'none', color: 'var(--error-text)', cursor: 'pointer', fontSize: 14, padding: '0 0 0 4px', flexShrink: 0, lineHeight: 1, alignSelf: 'flex-start' }}
-            title="Dismiss"
-          >×</button>
-        </div>
+        <Toast variant="error" message={mfaError} onDismiss={() => setMfaError(null)} />
       )}
 
       {/* ── MFA OOV warning toast ────────────────────────────────────────── */}
       {mfaWarning && (
-        <div className="toast toast--warn" style={{
-          position: 'fixed', bottom: mfaError ? 72 : 16, right: 16,
-          padding: '7px 10px 7px 12px',
-          fontFamily: 'Inter,system-ui,sans-serif',
-          display: 'flex', alignItems: 'flex-start', gap: 8,
-        }}>
-          <span style={{ flexShrink: 0 }}>⚠</span>
-          <span style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.5 }}>
-            {mfaWarning}
-          </span>
-          <button
-            onClick={() => setMfaWarning(null)}
-            style={{ background: 'none', border: 'none', color: 'var(--warn-text)', cursor: 'pointer', fontSize: 14, padding: '0 0 0 4px', flexShrink: 0, lineHeight: 1, alignSelf: 'flex-start' }}
-            title="Dismiss"
-          >×</button>
-        </div>
+        <Toast variant="warn" message={mfaWarning} onDismiss={() => setMfaWarning(null)} offset={mfaError ? 72 : 16} />
       )}
 
       {/* ── Loop toast ───────────────────────────────────────────────────── */}
