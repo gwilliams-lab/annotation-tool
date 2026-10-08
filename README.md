@@ -30,9 +30,9 @@ The documentation is split across four files:
 
 ## Initial Setup
 
-**Pick your platform first** — the steps are different enough that reading straight through causes confusion:
+**Pick your platform first** — the steps are considerably different depending on platform:
 - **macOS or Linux** → [macOS / Linux setup](#macos--linux-setup)
-- **Windows** → [Windows setup (via WSL)](#windows-setup-via-wsl) — `setup.sh` is a bash script and won't run directly on Windows
+- **Windows** → [Windows setup (via WSL)](#windows-setup-via-wsl)
 
 ### macOS / Linux setup
 
@@ -104,23 +104,9 @@ Windows isn't supported directly since `setup.sh` is a bash script — use WSL (
 
 ---
 
-## Run it with `npm run dev` (not a static build)
+### Note: run with `npm run dev` (not a static build)
 
-This tool is designed to run **locally in development mode** (`npm run dev`). The Vite dev server isn't just serving the page — it also hosts the Python-backed features and file I/O via local API routes, and (for in-browser re-alignment) talks to `mfa_server.py`.
-
-A static production bundle (`npm run build` → `dist/`) still loads and runs, but these dev-server–only features are unavailable in it:
-
-| Feature | `npm run dev` | Static `dist/` build |
-|---|---|---|
-| Playback, waveform, tile viewing & editing | ✅ | ✅ |
-| Export TextGrid (browser download) | ✅ | ✅ |
-| Live frequency crosshair/readout | ✅ | ✅ |
-| Enhanced spectrogram & formants/pitch | ✅ | ❌ (needs `/api/compute-dsp` + `aligner` env) |
-| Save to disk — `Ctrl/Cmd+S` | ✅ | ❌ (needs `/api/save-textgrid`) |
-| Load a `.wav` from outside `public/` | ✅ | ❌ (needs `/api/upload-wav`) |
-| In-browser MFA re-alignment (**MFA** button) | ✅ | ❌ (needs `mfa_server.py` on :5050) |
-
-In short: keep using `npm run dev` for the full experience. A hosted/static deployment would need a real backend reimplementing those API routes, which this repo does not ship.
+This tool is designed to run **locally in development mode** (`npm run dev`). A static production bundle (`npm run build` → `dist/`) will load and run, but will not enable you to: enhance the spectrogram and formants, save an edited textgrid to disk, load a `.wav` from outside `public/`, or perform in-browser MFA re-alignment. tldr; keep using `npm run dev` for the full experience. 
 
 ---
 
@@ -176,7 +162,4 @@ annotation-tool/
         ├── shortcuts.js      — content for the in-app keyboard-shortcuts / tile-colors popover
         └── index.css         — all styles
 ```
-
-See [frontend-reactjs/HANDOFF.md](frontend-reactjs/HANDOFF.md) for the full internals — architecture, data model, and a running history of feature/bugfix decisions.
-
 
