@@ -2,7 +2,7 @@
 # One-time setup for the full pipeline:
 #   1. Conda environments (aligner, whisperx, nemo)
 #   2. MFA acoustic model + dictionary
-#   3. Node.js dependencies for the annotation tool frontend
+#   3. Node.js dependencies for the lysn frontend
 #
 # Run from the code/ directory:
 #   bash setup.sh
@@ -14,7 +14,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "================================================================"
-echo " Annotation Tool — one-time setup"
+echo " lysn — one-time setup"
 echo "================================================================"
 echo ""
 
@@ -77,7 +77,7 @@ echo "  → models saved to ~/Documents/MFA/pretrained_models/"
 # ── 3. Frontend dependencies ──────────────────────────────────────────────────
 
 echo ""
-echo "[4/4] Installing Node.js dependencies for the annotation tool"
+echo "[4/4] Installing Node.js dependencies for lysn"
 (cd "$SCRIPT_DIR/frontend-reactjs" && npm install)
 echo "  → done"
 
@@ -94,7 +94,7 @@ echo ""
 echo "  2. Copy the output .TextGrid and your .wav into:"
 echo "     frontend-reactjs/public/"
 echo ""
-echo "  3. Start the annotation tool:"
+echo "  3. Start lysn:"
 echo "     cd frontend-reactjs && npm run dev"
 echo "     → open http://localhost:5173"
 echo ""

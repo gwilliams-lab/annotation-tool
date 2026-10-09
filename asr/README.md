@@ -162,7 +162,7 @@ bash asr/run_whisper.sh /path/to/audio.wav output_name /path/to/reference.txt
 - Matched words — the reference's own text replaces the ASR word's text (fixes casing/spelling), keeping ASR's timestamps.
 - ASR words with no match in the reference — dropped (typically hallucinated filler words like "um").
 - Reference words ASR never detected at all — skipped; there's no audio timing evidence to place them, so they can't appear in the output.
-- Mismatched runs where the word counts don't line up (e.g. ASR heard "jumpsover" where the reference has "jumps over") — the ASR run's combined time span is split evenly across the reference's words for that span. This is an approximation, same as any other ASR-derived timing — expect to refine word boundaries in the annotation tool afterward, same as you would for uncorrected ASR output.
+- Mismatched runs where the word counts don't line up (e.g. ASR heard "jumpsover" where the reference has "jumps over") — the ASR run's combined time span is split evenly across the reference's words for that span. This is an approximation, same as any other ASR-derived timing — expect to refine word boundaries in lysn afterward, same as you would for uncorrected ASR output.
 
 Only `words`/`word_text`/`output` per segment are corrected — segment-level `start`/`end` boundaries (which set each MFA alignment window) are untouched.
 

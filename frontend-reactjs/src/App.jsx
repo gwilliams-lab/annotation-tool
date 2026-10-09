@@ -7,6 +7,8 @@ import {
 } from './dsp.js';
 import { WELCOME_TITLE, WELCOME_TEXT, SHORTCUTS, TILE_EDITING_HINTS, TILE_COLOR_LEGEND } from './shortcuts.js';
 
+const lysnIconSrc = (theme) =>
+  theme === 'light' ? '/icons/lysn_light-mode.png' : '/icons/lysn_dark-mode.png';
 
 let _nextId = 1;
 const nextId = () => _nextId++;
@@ -1009,6 +1011,28 @@ function TileColorLegendRows() {
   );
 }
 
+function WelcomeBody({ text }) {
+  // Blank lines become paragraphs; [label](url) becomes a real <a>.
+  const paragraphs = text.trim().split(/\n\s*\n/);
+  return paragraphs.map((para, i) => {
+    const parts = [];
+    const re = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+    let last = 0;
+    let match;
+    while ((match = re.exec(para)) !== null) {
+      if (match.index > last) parts.push(para.slice(last, match.index));
+      parts.push(
+        <a key={match.index} href={match[2]} target="_blank" rel="noopener noreferrer">
+          {match[1]}
+        </a>
+      );
+      last = match.index + match[0].length;
+    }
+    if (last < para.length) parts.push(para.slice(last));
+    return <p key={i}>{parts}</p>;
+  });
+}
+
 function ShortcutsPopover({ onClose }) {
   // All closed by default so the popover opens compact; the user expands only the
   // section(s) they want. Independent toggles, not an accordion — any combo can be open.
@@ -1028,8 +1052,8 @@ function ShortcutsPopover({ onClose }) {
         />
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text-soft)', lineHeight: 1.5, marginBottom: 8 }}>
-        {WELCOME_TEXT}
+      <div className="shortcuts-welcome">
+        <WelcomeBody text={WELCOME_TEXT} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', fontSize: 12 }}>
@@ -2680,6 +2704,8 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem('theme', theme); } catch (_) {}
     themeRef.current = theme;
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) favicon.href = lysnIconSrc(theme);
     redraw();
   }, [theme, redraw]);
 
@@ -4360,7 +4386,8 @@ export default function App() {
               onClick={() => setShowShortcutsPopover(v => !v)}
               title="Keyboard shortcuts"
             >
-              GSA
+              <img className="logo-icon" src={lysnIconSrc(theme)} alt="" />
+              lysn
             </button>
             {!editMode && (
               <button

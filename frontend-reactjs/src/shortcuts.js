@@ -1,6 +1,7 @@
-// Content for the "GSA" logo's shortcuts popover (see ShortcutsPopover in App.jsx).
+// Content for the lysn logo's shortcuts popover (see ShortcutsPopover in App.jsx).
 //
-// WELCOME_TITLE / WELCOME_TEXT: the heading and intro paragraph shown at the top of the popover.
+// WELCOME_TITLE / WELCOME_TEXT: the heading and intro shown at the top of the popover.
+//   Blank lines in WELCOME_TEXT become paragraphs. Links use [label](https://url).
 //
 // SHORTCUTS / TILE_EDITING_HINTS: each row is { keys: string[], suffix?: string, desc: string }
 //   - keys: rendered as one or more <kbd> chips, joined by "/" if there's more than one
@@ -10,11 +11,13 @@
 // Keep SHORTCUTS/TILE_EDITING_HINTS in sync with the actual keydown handler and tier mousedown
 // handler in App.jsx — this file is documentation of that behavior, not the source of truth for it.
 
-export const WELCOME_TITLE = 'Welcome to the GLySN Speech Annotator (GSA)';
+export const WELCOME_TITLE = 'Welcome to lysn';
 
-export const WELCOME_TEXT = `We hope you find this tool useful for generating and revising word- and phoneme-level
-annotations of speech. Before you get started, here are some helpful keyboard shortcuts
-you should know about:`;
+export const WELCOME_TEXT = `An open-source software for speech transcription, alignment, and annotation.
+
+This tool was created by members of the [Gwilliams Laboratory of Speech Neuroscience](https://gwilliamslab.stanford.edu) in order to more easily generate and revise word- and phoneme-level annotations of speech stimuli.
+
+We hope you find it useful! Before you get started, here are some helpful keyboard shortcuts you should know about:`;
 
 export const SHORTCUTS = [
   { keys: ['Space'], desc: 'Play / pause' },

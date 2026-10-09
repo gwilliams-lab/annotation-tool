@@ -1,6 +1,6 @@
 # Advanced Features
 
-The advanced audio annotation tools: spectrogram, formants & pitch, confidence scores, and in-browser MFA re-alignment.
+Advanced lysn features: spectrogram, formants & pitch, confidence scores, and in-browser MFA re-alignment.
 
 [← Back to README](README.md) · [Transcription →](TRANSCRIPTION.md) · [Usage →](USAGE.md)
 

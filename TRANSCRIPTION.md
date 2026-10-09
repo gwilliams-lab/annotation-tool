@@ -64,7 +64,7 @@ For non-English **in-browser** MFA re-alignment (the MFA button while annotating
 
 ### Constraining phonemes to word boundaries
 
-By default MFA aligns each ASR *segment* (a multi-word phrase) as one unit, which occasionally lets a phoneme land slightly outside its own word's timing — most visible in the annotation tool as a phoneme tile that doesn't line up under its word. Pass `--word-level-mfa` on step 2 to align each word individually instead (still with one neighbouring word of context on each side, so MFA keeps seeing coarticulation), then clamp that word's phones to its own boundary:
+By default MFA aligns each ASR *segment* (a multi-word phrase) as one unit, which occasionally lets a phoneme land slightly outside its own word's timing — most visible in lysn as a phoneme tile that doesn't line up under its word. Pass `--word-level-mfa` on step 2 to align each word individually instead (still with one neighbouring word of context on each side, so MFA keeps seeing coarticulation), then clamp that word's phones to its own boundary:
 
 ```bash
 conda run -n aligner python asr/transcribe.py \

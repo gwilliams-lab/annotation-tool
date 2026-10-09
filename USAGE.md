@@ -1,6 +1,6 @@
 # Usage
 
-How to run the annotation viewer and work efficiently while annotating.
+How to run lysn and work efficiently while annotating.
 
 [← Back to README](README.md) · [Transcription →](TRANSCRIPTION.md) · [Advanced features →](ADVANCED.md)
 
@@ -13,7 +13,9 @@ frontend-reactjs/public/audio.wav
 frontend-reactjs/public/output_whisper.TextGrid
 ```
 
-To start the annotation viewer server:
+## Running lysn
+
+To start lysn:
 
 ```bash
 cd frontend-reactjs
@@ -36,7 +38,7 @@ You can also load files at any time without restarting — click **More ⋮** in
 
 ## Tips and Tricks for Annotating
 
-- **Key Reminder**: tiles are editable by default — press **`1`**, or click the lock icon that appears next to the **GSA** logo once locked, to switch into view-only mode and back.
+- **Key Reminder**: tiles are editable by default — press **`1`**, or click the lock icon that appears next to the **lysn** logo once locked, to switch into view-only mode and back.
 
 ### Navigation
 
@@ -76,9 +78,9 @@ Edited status, and the before/after text, are saved into the `.TextGrid` file al
 
 ### Locking / view-only mode
 
-Tiles are **editable by default**. Press **`1`**, or click the lock icon next to the **GSA** logo (it appears once locked), to switch into **locked / view-only mode** — editing, tile-editing shortcuts, and deletion are disabled until you unlock again.
+Tiles are **editable by default**. Press **`1`**, or click the lock icon next to the **lysn** logo (it appears once locked), to switch into **locked / view-only mode** — editing, tile-editing shortcuts, and deletion are disabled until you unlock again.
 
-There's no persistent hint bar while unlocked — click the **GSA** logo in the toolbar at any time to open the full shortcuts reference.
+There's no persistent hint bar while unlocked — click the **lysn** logo in the toolbar at any time to open the full shortcuts reference.
 
 **Single tile operations:**
 - **Click a tile** — exclusive select: replaces any previous selection with that one tile, moves the playhead to its onset, and sets the play region to onset→offset
@@ -113,7 +115,7 @@ There's no persistent hint bar while unlocked — click the **GSA** logo in the 
 
 Click **Export** to download the annotations as a file. Two format options:
 
-- **Full export** — includes all tiers (WRD + PHN + custom), confidence scores, and edited/validated-word metadata; best for reloading into this tool since nothing is lost
+- **Full export** — includes all tiers (WRD + PHN + custom), confidence scores, and edited/validated-word metadata; best for reloading into lysn since nothing is lost
 - **Praat compatible** — the same tiers (WRD + PHN + custom), but with confidence-score and edited/validated metadata fields omitted so Praat opens the file without warnings
 
 ---
@@ -138,4 +140,4 @@ Click **Export** to download the annotations as a file. Two format options:
 | `↑` / `↓` | Zoom the timeline viewing window in / out |
 | `+` / `-` | Zoom waveform amplitude, or tile text size if a tier was last clicked |
 
-> These shortcuts are also available in-app: click the **GSA** logo in the top-left of the toolbar to open the keyboard-shortcuts reference at any time.
+> These shortcuts are also available in-app: click the **lysn** logo in the top-left of the toolbar to open the keyboard-shortcuts reference at any time.

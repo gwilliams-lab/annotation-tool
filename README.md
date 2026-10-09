@@ -1,4 +1,6 @@
-# Annotation Tool
+# lysn
+
+Open-source software for speech transcription, alignment, and annotation.
 
 A browser-based audio annotation viewer and editor for Praat TextGrid files. This repository also contains code to perform a first-pass automatic speech transcription on an audio file of your choosing.
 
@@ -10,7 +12,7 @@ There are two main components in this repository:
 
 The documentation is split across four files:
 
-**This README** — setup and overview for the annotation viewer
+**This README** — setup and overview for lysn
 - [Initial Setup](#initial-setup)
 - [Demo](#demo)
 - [File Structure](#file-structure)
@@ -18,8 +20,8 @@ The documentation is split across four files:
 **[TRANSCRIPTION.md](TRANSCRIPTION.md)** — generating an initial TextGrid from audio
 - [Audio Transcription](TRANSCRIPTION.md#audio-transcription)
 
-**[USAGE.md](USAGE.md)** — a guide to running the annotation viewer
-- [Running the Annotation Viewer](USAGE.md#running-the-annotation-viewer)
+**[USAGE.md](USAGE.md)** — a guide to running lysn
+- [Running lysn](USAGE.md#running-lysn)
 - [Tips and Tricks for Annotating](USAGE.md#tips-and-tricks-for-annotating)
 - [Keyboard shortcuts — quick reference](USAGE.md#keyboard-shortcuts--quick-reference)
 
@@ -71,7 +73,7 @@ Once setup finishes:
 cd frontend-reactjs
 npm run dev
 ```
-Then open **http://localhost:5173** in your browser — see [USAGE.md](USAGE.md#running-the-annotation-viewer) for the full walkthrough.
+Then open **http://localhost:5173** in your browser — see [USAGE.md](USAGE.md#running-lysn) for the full walkthrough.
 
 ### Windows setup (via WSL)
 
@@ -95,7 +97,7 @@ Windows isn't supported directly since `setup.sh` is a bash script — use WSL (
    ```bash
    bash setup.sh
    ```
-5. Start the viewer:
+5. Start lysn:
    ```bash
    cd frontend-reactjs
    npm run dev
@@ -106,7 +108,7 @@ Windows isn't supported directly since `setup.sh` is a bash script — use WSL (
 
 ### Note: run with `npm run dev` (not a static build)
 
-This tool is designed to run **locally in development mode** (`npm run dev`). A static production bundle (`npm run build` → `dist/`) will load and run, but will not enable you to: enhance the spectrogram and formants, save an edited textgrid to disk, load a `.wav` from outside `public/`, or perform in-browser MFA re-alignment. tldr; keep using `npm run dev` for the full experience. 
+lysn is designed to run **locally in development mode** (`npm run dev`). A static production bundle (`npm run build` → `dist/`) will load and run, but will not enable you to: enhance the spectrogram and formants, save an edited textgrid to disk, load a `.wav` from outside `public/`, or perform in-browser MFA re-alignment. tldr; keep using `npm run dev` for the full experience. 
 
 ---
 
@@ -148,7 +150,7 @@ annotation-tool/
 │   ├── environment-parakeet.yml
 │   ├── run_whisper.sh        — convenience script for WhisperX
 │   └── run_parakeet.sh       — convenience script for Parakeet
-└── frontend-reactjs/         — annotation tool (React + Vite)
+└── frontend-reactjs/         — lysn (React + Vite)
     ├── dsp_server.py         — Python DSP: linear-frequency STFT spectrogram, mel-warped display axis (librosa), run as a persistent worker + formants & pitch (parselmouth/Praat)
     ├── vite.config.js        — Vite config + dev-server middleware (/api/public-files, /api/compute-dsp, /api/save-textgrid)
     ├── public/               — place your .wav and .TextGrid here (also ipa_keys.json, the virtual IPA keyboard's key set)

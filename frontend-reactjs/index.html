@@ -2,16 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="/icons/lysn_dark-mode.png" />
     <script>
       (function () {
         try {
           var v = localStorage.getItem('theme');
-          document.documentElement.setAttribute('data-theme', (v === 'light' || v === 'dark') ? v : 'dark');
+          var theme = (v === 'light' || v === 'dark') ? v : 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+          var icon = document.querySelector('link[rel="icon"]');
+          if (icon) icon.href = theme === 'light' ? '/icons/lysn_light-mode.png' : '/icons/lysn_dark-mode.png';
         } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
       })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Annotation Viewer</title>
+    <title>lysn</title>
+    <meta name="description" content="Open-source software for speech transcription, alignment, and annotation." />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
