@@ -52,7 +52,7 @@ Requirements:
   ```
 
 Note: There is no audio in the following video.
-<video src="https://github.com/user-attachments/assets/3cd4f80c-0bf1-4f35-bc85-58285864d78a" controls width="100%"></video>
+<video src="https://github.com/user-attachments/assets/3cd4f80c-0bf1-4f35-bc85-58285864d78a" controls></video>
 
 Setup:
 - From the `annotation-tool/` directory, run:
@@ -67,6 +67,7 @@ This creates the necessary conda environments (`aligner`, `whisperx`, and `nemo`
 - WhisperX on Mac will use CPU or MPS (Apple Silicon) for inference.
 
 <video src="https://github.com/user-attachments/assets/95f06d80-a8f9-44ae-863f-acd5c6cb02d6" controls width="100%"></video>
+
 
 Once setup finishes:
 ```bash
