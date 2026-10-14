@@ -1,3 +1,4 @@
+
 # lysn
 
 Open-source software for speech transcription, alignment, and annotation.
@@ -52,7 +53,8 @@ Requirements:
   ```
 
 Note: There is no audio in the following video.
-<video src="https://github.com/user-attachments/assets/3cd4f80c-0bf1-4f35-bc85-58285864d78a" controls></video>
+
+https://github.com/user-attachments/assets/cd1a1024-f75e-4e82-831d-2d5e86317f5b
 
 Setup:
 - From the `annotation-tool/` directory, run:
@@ -66,8 +68,7 @@ This creates the necessary conda environments (`aligner`, `whisperx`, and `nemo`
 - `nemo` (Parakeet) is currently only supported on Linux with NVIDIA GPUs and will be skipped on macOS.
 - WhisperX on Mac will use CPU or MPS (Apple Silicon) for inference.
 
-<video src="https://github.com/user-attachments/assets/95f06d80-a8f9-44ae-863f-acd5c6cb02d6" controls width="100%"></video>
-
+https://github.com/user-attachments/assets/62ee126e-0700-4531-a4b4-1b1440d276ed
 
 Once setup finishes:
 ```bash
